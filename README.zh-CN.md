@@ -31,6 +31,7 @@
 | Show notification | 提示总开关 |
 | Show copied text | 附带被复制内容的前 40 个字符（默认关闭，见下方隐私说明） |
 | Show menu bar icon | 显示或隐藏菜单栏图标；菜单里可以再打开设置 |
+| Launch at login | 注册为登录项，走系统自带的「登录项」，不装额外的启动脚本 |
 
 ## 实现原理
 

@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 
 // ponytail: 只轮询 changeCount，不监听按键、不读内容 —— 零权限。
 // 轮询周期 0.15s 是「够快 + 不费电」的经验值。
@@ -142,7 +143,6 @@ final class Controller: NSObject, NSApplicationDelegate {
     private let toast = Toast()
     private var statusItem: NSStatusItem?
     private var settingsWindow: NSWindow?
-    private var switches: [NSSwitch] = []
     private let defaults = UserDefaults.standard
 
     private var enabled: Bool {
@@ -240,6 +240,7 @@ final class Controller: NSObject, NSApplicationDelegate {
             ("Show notification", enabled, #selector(toggleEnabled(_:))),
             ("Show copied text", preview, #selector(togglePreview(_:))),
             ("Show menu bar icon", showInMenuBar, #selector(toggleMenuBar(_:))),
+            ("Launch at login", launchAtLogin, #selector(toggleLaunchAtLogin(_:))),
         ]
         for (title, on, action) in rows {
             let sw = NSSwitch()
@@ -252,7 +253,6 @@ final class Controller: NSObject, NSApplicationDelegate {
             row.orientation = .horizontal
             row.spacing = 8
             row.distribution = .fill
-            switches.append(sw)
             stack.addArrangedSubview(row)
             row.widthAnchor.constraint(equalTo: stack.widthAnchor).isActive = true
         }
@@ -270,7 +270,20 @@ final class Controller: NSObject, NSApplicationDelegate {
         return win
     }
 
+    // ponytail: 用系统自带的登录项（SMAppService），不自己写 LaunchAgent —— 用户在「系统设置 → 登录项」里能看见也能关
+    private var launchAtLogin: Bool { SMAppService.mainApp.status == .enabled }
+
     @objc private func toggleEnabled(_ s: NSSwitch) { enabled = s.state == .on }
+    @objc private func toggleLaunchAtLogin(_ s: NSSwitch) {
+        do {
+            if s.state == .on { try SMAppService.mainApp.register() }
+            else { try SMAppService.mainApp.unregister() }
+        } catch {
+            NSLog("rogertthat: login item failed \(error)")
+        }
+        s.state = launchAtLogin ? .on : .off        // 以系统真实状态为准，别信开关
+        NSLog("rogertthat: login item status=\(SMAppService.mainApp.status.rawValue) enabled=\(launchAtLogin)")
+    }
     @objc private func togglePreview(_ s: NSSwitch) { preview = s.state == .on }
     @objc private func toggleMenuBar(_ s: NSSwitch) {
         showInMenuBar = s.state == .on
@@ -301,6 +314,14 @@ func selftest() -> Never {
 
 let args = CommandLine.arguments
 if args.contains("--selftest") { selftest() }
+if args.contains("--login-item-test") {
+    do {
+        try SMAppService.mainApp.register()
+        print("after register: \(SMAppService.mainApp.status == .enabled ? "enabled" : "status=\(SMAppService.mainApp.status.rawValue)")")
+    } catch { print("register failed: \(error)") }
+    exit(0)
+    exit(0)
+}
 if args.contains("--menubar-test") {   // 验证菜单栏图标能加上也能摘掉
     let app = NSApplication.shared
     app.setActivationPolicy(.accessory)

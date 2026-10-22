@@ -31,6 +31,7 @@ The settings window opens on every launch, so you always know it is running — 
 | Show notification | Master switch for the pill |
 | Show copied text | Adds the first 40 characters of the copied text (off by default; see privacy below) |
 | Show menu bar icon | Adds or removes the menu bar item; reopen Settings from that menu |
+| Launch at login | Registers RogerThat as a login item (macOS's own Login Items, no helper script) |
 
 ## How it works
 
